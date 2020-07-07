@@ -30,7 +30,7 @@ generateRegexReq x | (safeGet x "*+?{" 1) =
                             '*' -> RegexReq {characters = Value [(x !! 0)], minValue = Finite 0, maxValue = Infinite }:generateRegexReq(x !!! (2, length x))
                             '+' -> RegexReq {characters = Value [(x !! 0)], minValue = Finite 1, maxValue = Infinite }:generateRegexReq(x !!! (2, length x))
                             '?' -> RegexReq {characters = Value [(x !! 0)], minValue = Finite 0, maxValue = Finite 1 }:generateRegexReq(x !!! (2, length x))
-                            '{' -> RegexReq {characters = Value "teste", minValue = Finite 1, maxValue = Finite 1 }:generateRegexReq(x !!! (2, length x))
+                            '{' -> RegexReq {characters = Value [(x !! 0)], minValue = (getValueinCurlyBrackets x) !! 0, maxValue = (getValueinCurlyBrackets x) !! 1 }:generateRegexReq(x !!! (((findString "}" x) !! 0) + 1, length x))
                    | (safeGet x "(" 0 ) =
                        [RegexReq {characters = Value "teste2", minValue = Finite 1, maxValue = Finite 1 }]
                    | (safeGet x "[" 0) =
@@ -44,6 +44,11 @@ generateRegexReq x | (safeGet x "*+?{" 1) =
                                     else
                                         RegexReq {characters = Value (init value), minValue = Finite 1, maxValue = Finite 1 }:generateRegexReq(x !!! ((length value) - 1, length x))
 
+getValueinCurlyBrackets :: String -> [Quantity]
+getValueinCurlyBrackets str  | (findString "," value /= []) && ((length value -1) == (findString "," value !! 0) ) = [Finite (read (value !!! (0, (findString "," value !! 0)))::Int), Infinite]
+                             | (findString "," value /= []) && ((length value -1) /= (findString "," value !! 0) ) = [Finite (read (value !!! (0, (findString "," value !! 0)))::Int), Finite (read (value !!! (1 + (findString "," value !! 0), length value))::Int)]
+                             | otherwise = [Finite (read value::Int), Finite (read value::Int)]
+                              where value = str !!! (2, (findString "}" str) !! 0)
 
 executeMultipleRegex :: [RegexReq] -> String -> Maybe [String]        
 executeMultipleRegex r str = do
